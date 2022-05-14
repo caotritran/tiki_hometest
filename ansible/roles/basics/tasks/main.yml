@@ -1,0 +1,53 @@
+---
+- name: update all package
+  yum: name="*" state=latest
+#  shell: sudo yum update -y
+
+- name: Install epel package
+  yum:
+    name:
+      - epel-release
+    state: present
+- name: Install base package
+  yum:
+    name:
+      - npm
+      - iptraf
+      - nmap-ncat
+      - jq
+      - net-tools
+      - telnet
+      - yum-utils
+      - unzip
+      - python3
+      - python3-pip
+    state: present
+
+- name: turn off SELinux
+  lineinfile:
+    path: '/etc/sysconfig/selinux'
+    regexp: '^SELINUX='
+    line: 'SELINUX=Disabled'
+  ignore_errors: yes
+
+- name: Set timezone to UTC
+  timezone:
+    name: UTC
+
+- name: set system hostname
+  command: hostnamectl set-hostname {{ inventory_hostname }}
+
+- name: change sysctl config file
+  template:
+    src: sysctl.conf
+    dest: /etc/sysctl.conf
+    backup: yes
+
+- name: change limit config file
+  blockinfile:
+    path: /etc/security/limits.conf
+    block: |
+      * soft nproc 102400
+      * hard nproc 102400
+      * soft nofile 102400
+      * hard nofile 102400

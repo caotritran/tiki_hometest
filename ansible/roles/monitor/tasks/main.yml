@@ -1,0 +1,16 @@
+---
+
+- name: install ops agent
+  shell: curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh && sudo bash add-google-cloud-ops-agent-repo.sh --also-install
+
+- name: copy sample config
+  template:
+    src: config.yaml
+    dest: /etc/google-cloud-ops-agent/config.yaml
+    backup: yes
+
+- name: enable ops agent service
+  systemd:
+    name: google-cloud-ops-agent.service
+    enabled: yes
+

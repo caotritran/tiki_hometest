@@ -1,0 +1,16 @@
+- name: install basic for new VMs
+  hosts: all
+  become: yes
+  remote_user: centos
+  become_user: root
+  become_method: sudo
+
+  roles:
+    - basics
+    - monitor
+    - docker
+
+  tasks:
+    - name: reboot all server to make sure every things changed
+      reboot:
+        reboot_timeout: 3600

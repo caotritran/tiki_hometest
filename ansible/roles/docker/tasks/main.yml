@@ -1,0 +1,85 @@
+---
+- name: prepare
+  shell: sudo yum-config-manager \
+    --add-repo \
+    https://download.docker.com/linux/centos/docker-ce.repo
+
+- name: install docker CE
+  yum:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+
+- name: install docker-compose
+  shell: sudo curl -L "https://github.com/docker/compose/releases/download/1.23.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/bin/docker-compose
+
+- name: change mod
+  file:
+    path: /usr/bin/docker-compose
+    mode: 0755
+
+- name: create folder docker
+  file:
+    path: /etc/docker
+    state: directory
+    mode: '0755'
+
+- name: custom loging and storage docker
+  template:
+    src: daemon.json
+    dest: /etc/docker/daemon.json
+
+- name: start docker
+  systemd:
+    name: docker.service
+    state: started
+    enabled: yes
+
+- name: copy dockerfile
+  template:
+    src: echo-server.tgz
+    dest: /opt/echo-server.tgz
+
+- name: untar file
+  shell: sudo /bin/tar -xf  /opt/echo-server.tgz -C /opt/
+
+- name: install pip3-docker
+  shell: sudo pip3 install docker
+   
+- name: docker build
+  community.docker.docker_image:
+    build:
+      path: /opt/echo-server
+    name: tritran14/echo-server
+    tag: latest
+    source: build
+  register: docker_build
+  vars:
+    ansible_python_interpreter: /bin/python3
+
+- debug: var=docker_build.stdout_lines
+
+- name: docker-compose run
+  shell: /usr/bin/docker-compose -f /opt/echo-server/docker-compose.yaml up -d
+  register: docker_compose
+  vars:
+    ansible_python_interpreter: /bin/python3
+
+- debug: var=docker_compose.stdout_lines
+
+- name: start ops agent service
+  systemd:
+    name: google-cloud-ops-agent.service
+    state: started
+
+- name: Check ops-agent service status
+  shell: systemctl status google-cloud-ops-agent.service | head -5
+  register: status
+- debug: msg="google-cloud-ops-agent.service is Running"
+  when: status.stdout.find("running") != -1
+- debug: msg="google-cloud-ops-agent.service is Not Running"
+  when: status.stdout.find("running") == -1
+- debug: var=status.stdout_lines
+- debug: var=status.stderr_lines

@@ -1,0 +1,29 @@
+logging:
+  receivers:
+    nginx_access:
+      type: nginx_access
+      include_paths:
+      - /var/log/docker/access.log
+      - /var/log/docker/*.access.log
+    nginx_error:
+      type: nginx_error
+      include_paths:
+      - /var/log/docker/error.log
+      - /var/log/docker/*.error.log
+  service:
+    pipelines:
+      nginx:
+        receivers:
+          - nginx_access
+          - nginx_error
+metrics:
+  receivers:
+    nginx:
+      type: nginx
+      stub_status_url: http://127.0.0.1:80/status
+  service:
+    pipelines:
+      nginx:
+        receivers:
+          - nginx
+
